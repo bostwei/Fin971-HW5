@@ -1,5 +1,5 @@
 // This code solves Hayashi's investment model.
-// Written by Akio Ino
+// Written by Shiyan Wei
 
 var k, q, i, z, sdf, c, qob; // Even though z is exogenous shock, it is determined by z'=(1-rho) + rho z + eps, so it is determined inside the model and we should include z in this section.
 
@@ -7,7 +7,7 @@ varexo eps_z, measure_error;
 
 
 parameters
-	theta r delta rho gamma;
+	theta r delta rho psi_0 gamma;
 
 
 // Start describing the model. For our purpose, 7 and 8 are redundant.
@@ -16,11 +16,11 @@ model;
     // NOTE: in dynare notation, k = k_{t+1}, and k(-1) = k_t.
 
     // 1. FOC wrt I_t (equation (4) in lecture note)
-    q = 1;
+    q = 1 + psi_0 * (i - delta *k(-1))/(k(-1));
 
     // 2. FOC wrt k_{t+1} (equation (5))
 
-    q = sdf(+1) * (theta * z(+1) * k^(theta-1) + q(+1) * (1-delta) );
+    q = sdf(+1) * (theta * z(+1) * k^(theta-1) +  (- 4 * delta * psi_0 * (z(+1)- delta * k) * k - 2 * psi_0 * (i(+1) - delta*(k)) ^2)/(4*k^2) + q(+1) * (1-delta) );
 
     // 3. Law of motion for capital-output
     k = i + (1-delta) * k(-1);
@@ -32,7 +32,7 @@ model;
 	sdf = (1/(1+r)) * (c/c(-1))^(-gamma);
 
     // 6. Market clearing for consumption goods.
-	c = z * k(-1)^theta - i ;
+	c = z * k(-1)^theta  - psi_0 * (i - delta * k(-1))^2/(2*k(-1)) - i ;
 
     // 7. Observation equation for q
     qob = q + measure_error;
@@ -69,8 +69,9 @@ varobs k, qob;
 
 // Parameters to be estimated
 estimated_params;
-stderr eps_z, inv_gamma_pdf, 0.007, inf;
 theta, uniform_pdf, , ,0, 1;
+psi_0, uniform_pdf, , ,0, 1;
+stderr eps_z, inv_gamma_pdf, 0.007, inf;
 stderr measure_error,inv_gamma_pdf, 0.007, inf;
 end;
 
